@@ -167,6 +167,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "https://taleem-pro.vercel.app",
 ]
+cors_origins_env = os.environ.get('CORS_ALLOWED_ORIGINS')
+if cors_origins_env:
+    CORS_ALLOWED_ORIGINS.extend([origin.strip() for origin in cors_origins_env.split(',') if origin.strip()])
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -177,6 +180,9 @@ CSRF_TRUSTED_ORIGINS = [
     "https://taleem-pro.vercel.app",
     "https://thorough-ambition-production-59ec.up.railway.app",
 ]
+csrf_origins_env = os.environ.get('CSRF_TRUSTED_ORIGINS')
+if csrf_origins_env:
+    CSRF_TRUSTED_ORIGINS.extend([origin.strip() for origin in csrf_origins_env.split(',') if origin.strip()])
 
 # =========================
 # EMAIL
