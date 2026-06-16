@@ -40,9 +40,19 @@ function TeacherAdd() {
     } catch (err) {
       console.error(err);
       if (err.response && err.response.data) {
-        setErrors(err.response.data);
+        const data = err.response.data;
+        if (typeof data === 'string') {
+          // If the backend returns HTML or a raw string (e.g. 500 error page)
+          setErrors({ non_field_errors: [data.slice(0, 150) || 'Internal Server Error'] });
+        } else if (data.detail) {
+          // If the backend returns a permission error or detail message (e.g. 403 Forbidden)
+          setErrors({ non_field_errors: [data.detail] });
+        } else {
+          // Standard validation errors mapping to specific inputs
+          setErrors(data);
+        }
       } else {
-        setErrors({ non_field_errors: ['Failed to add teacher record.'] });
+        setErrors({ non_field_errors: ['Failed to connect to the backend server. Please verify the server is running.'] });
       }
     } finally {
       setLoading(false);

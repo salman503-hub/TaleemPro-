@@ -87,7 +87,7 @@ class TeacherViewSet(viewsets.ModelViewSet):
             )
 
             # Trigger Welcome Email asynchronously
-            trigger_welcome_email(teacher.name, teacher.email, temp_password)
+            trigger_welcome_email(teacher.name, teacher.email, username, temp_password)
 
             # Create Welcome in-app notification
             create_in_app_notification(

@@ -20,13 +20,12 @@ teacher_detail = TeacherViewSet.as_view({
 })
 
 urlpatterns = [
-    # Root URL (IMPORTANT)
-    path('', home),
-
-    # API status
-    path('status/', AppStatusView.as_view(), name='teachers_status'),
-
     # Teachers APIs
-    path('teachers/', teacher_list, name='teacher-list'),
-    path('teachers/<int:pk>/', teacher_detail, name='teacher-detail'),
+    path('', teacher_list, name='teacher-list'),
+    path('<int:pk>/', teacher_detail, name='teacher-detail'),
+    path('<int:pk>/toggle_active/', TeacherViewSet.as_view({'post': 'toggle_active'}), name='teacher-toggle-active'),
+
+    # API status / test
+    path('status/', AppStatusView.as_view(), name='teachers_status'),
+    path('test/', home, name='teachers_test'),
 ]

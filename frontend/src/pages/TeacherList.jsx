@@ -32,7 +32,11 @@ function TeacherList() {
       setCurrentPage(page);
     } catch (err) {
       console.error(err);
-      setError('Failed to load teachers directory.');
+      const errMsg = err.response?.data?.detail 
+        || (typeof err.response?.data === 'string' ? err.response.data.slice(0, 150) : '')
+        || err.message 
+        || 'Unknown connection error';
+      setError(`Failed to load teachers directory: ${errMsg}`);
     } finally {
       setLoading(false);
     }

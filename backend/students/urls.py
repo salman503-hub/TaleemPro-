@@ -17,4 +17,5 @@ urlpatterns = [
     path('status/', AppStatusView.as_view(), name='students_status'),
     path('', student_list, name='student-list'),
     path('<int:pk>/', student_detail, name='student-detail'),
+    path('<int:pk>/toggle_active/', StudentViewSet.as_view({'post': 'toggle_active'}), name='student-toggle-active'),
 ]

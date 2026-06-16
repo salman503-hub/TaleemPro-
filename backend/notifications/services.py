@@ -167,11 +167,7 @@ def _send_email_worker(email_log_id):
             subject=email_log.subject,
             body=text_content,
             from_email=from_email,
-            to=[email_log.recipient_email],
-            headers={
-                'Auto-Submitted': 'auto-generated',
-                'X-Auto-Response-Suppress': 'All',
-            }
+            to=[email_log.recipient_email]
         )
         msg.attach_alternative(email_log.message, "text/html")
         msg.send()
@@ -238,45 +234,46 @@ def create_in_app_notification(user, title, message, type):
     )
 
 
-def trigger_welcome_email(teacher_name, teacher_email, temp_password):
+def trigger_welcome_email(user_name, user_email, username, temp_password, role='TEACHER'):
     """
-    Compiles and triggers the teacher welcome email.
+    Compiles and triggers the welcome email for teachers and students.
     """
     settings_obj = NotificationSetting.get_settings()
     if not settings_obj.welcome_emails_enabled:
-        logger.info(f"Welcome emails are disabled. Skipping welcome email for {teacher_email}.")
+        logger.info(f"Welcome emails are disabled. Skipping welcome email for {user_email}.")
         return None
 
-    subject = "Welcome to TaleemPro!"
-    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
+    role_label = "Student" if role == 'STUDENT' else "Faculty member"
+    subject = "Your TaleemPro Portal Access Details"
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'https://taleem-pro.vercel.app')
     login_url = f"{frontend_url.rstrip('/')}/login"
     
     body = f"""
-    <h1 style="color: #1e293b; font-size: 22px; font-weight: 700; margin-top: 0;">Welcome to TaleemPro, {teacher_name}!</h1>
-    <p style="color: #475569; font-size: 15px; line-height: 1.6;">Your teacher account has been successfully created by the administrator.</p>
-    <p style="color: #475569; font-size: 15px; line-height: 1.6;">You can log in to your account using the credentials below:</p>
+    <h1 style="color: #1e293b; font-size: 20px; font-weight: 700; margin-top: 0;">Welcome to TaleemPro, {user_name}!</h1>
+    <p style="color: #475569; font-size: 15px; line-height: 1.6;">Your portal profile has been set up as a {role_label}. Below are your access details to log in to the learning management dashboard:</p>
     
     <table border="0" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #f8fafc; border-radius: 6px; margin: 20px 0; border: 1px dashed #cbd5e1;">
       <tr>
-        <td style="padding: 15px;">
-          <strong style="color: #1e293b;">Registered Email:</strong> <code style="color: #4f46e5; font-size: 14px;">{teacher_email}</code><br/>
-          <strong style="color: #1e293b;">Temporary Password:</strong> <code style="color: #b91c1c; font-size: 14px;">{temp_password}</code>
+        <td style="padding: 15px; font-family: sans-serif; font-size: 14px;">
+          <strong style="color: #1e293b;">Username:</strong> <code style="color: #4f46e5; font-size: 14px;">{username}</code><br/>
+          <strong style="color: #1e293b;">Login Email:</strong> <code style="color: #4f46e5; font-size: 14px;">{user_email}</code><br/>
+          <strong style="color: #1e293b;">Access Key:</strong> <code style="color: #b91c1c; font-size: 14px;">{temp_password}</code>
         </td>
       </tr>
     </table>
     
-    <p style="color: #475569; font-size: 13px;">Please make sure to change your temporary password after logging in for the first time.</p>
+    <p style="color: #475569; font-size: 13px; line-height: 1.5;">For security, you will be prompted to choose a new password on your first login.</p>
     """
     
     html_content = get_base_html_template(
         title=subject,
         body_content=body,
-        button_text="Login to Portal",
+        button_text="Set Up Password & Login",
         button_url=login_url
     )
     
     return send_email_async(
-        recipient_email=teacher_email,
+        recipient_email=user_email,
         subject=subject,
         html_message=html_content,
         notification_type=Notification.TypeChoices.WELCOME
@@ -293,7 +290,7 @@ def trigger_course_assignment_email(teacher, course):
         return None
 
     subject = f"New Course Assigned: {course.course_code}"
-    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'https://taleem-pro.vercel.app')
     login_url = f"{frontend_url.rstrip('/')}/courses"
     
     body = f"""

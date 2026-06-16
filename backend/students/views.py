@@ -88,6 +88,17 @@ class StudentViewSet(viewsets.ModelViewSet):
         student.user = user
         student.save()
         
+        # Trigger Welcome In-app notification
+        from notifications.services import create_in_app_notification
+        from notifications.models import Notification
+        
+        create_in_app_notification(
+            user=user,
+            title="Welcome to TaleemPro!",
+            message="Welcome to TaleemPro! Your student profile has been successfully set up. Please change your password on first login.",
+            type=Notification.TypeChoices.WELCOME
+        )
+        
         # Assign courses
         if assigned_courses:
             from courses.models import Course, Enrollment

@@ -64,9 +64,16 @@ function TeacherEdit() {
     } catch (err) {
       console.error(err);
       if (err.response && err.response.data) {
-        setErrors(err.response.data);
+        const data = err.response.data;
+        if (typeof data === 'string') {
+          setErrors({ non_field_errors: [data.slice(0, 150) || 'Internal Server Error'] });
+        } else if (data.detail) {
+          setErrors({ non_field_errors: [data.detail] });
+        } else {
+          setErrors(data);
+        }
       } else {
-        setErrors({ non_field_errors: ['Failed to save teacher changes.'] });
+        setErrors({ non_field_errors: ['Failed to connect to the backend server. Please verify the server is running.'] });
       }
     } finally {
       setSaving(false);
