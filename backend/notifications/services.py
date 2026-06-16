@@ -146,6 +146,39 @@ def get_base_html_template(title, body_content, button_text=None, button_url=Non
     </html>
     """
 
+import json
+import urllib.request
+import urllib.error
+import os
+
+def send_via_resend(recipient_email, subject, html_message, from_email, api_key):
+    url = "https://api.resend.com/emails"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "from": from_email,
+        "to": [recipient_email],
+        "subject": subject,
+        "html": html_message,
+    }
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=10) as response:
+            res_body = response.read().decode("utf-8")
+            logger.info(f"Resend API response: {res_body}")
+            return True, None
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8")
+        logger.error(f"Resend API HTTPError: {e.code} - {error_body}")
+        return False, f"Resend HTTP {e.code}: {error_body}"
+    except Exception as e:
+        logger.error(f"Resend API error: {str(e)}")
+        return False, str(e)
+
+
 def _send_email_worker(email_log_id):
     """
     Background worker that attempts to send a generated email log.
@@ -158,16 +191,32 @@ def _send_email_worker(email_log_id):
 
     try:
         from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'TaleemPro <noreply@taleempro.com>')
-        text_content = strip_tags(email_log.message)
-        
-        msg = EmailMultiAlternatives(
-            subject=email_log.subject,
-            body=text_content,
-            from_email=from_email,
-            to=[email_log.recipient_email]
-        )
-        msg.attach_alternative(email_log.message, "text/html")
-        msg.send()
+        resend_api_key = getattr(settings, 'RESEND_API_KEY', os.environ.get('RESEND_API_KEY', ''))
+
+        if resend_api_key:
+            resend_from = getattr(settings, 'RESEND_FROM_EMAIL', os.environ.get('RESEND_FROM_EMAIL', ''))
+            if not resend_from:
+                resend_from = from_email
+            
+            success, err_msg = send_via_resend(
+                recipient_email=email_log.recipient_email,
+                subject=email_log.subject,
+                html_message=email_log.message,
+                from_email=resend_from,
+                api_key=resend_api_key
+            )
+            if not success:
+                raise Exception(err_msg)
+        else:
+            text_content = strip_tags(email_log.message)
+            msg = EmailMultiAlternatives(
+                subject=email_log.subject,
+                body=text_content,
+                from_email=from_email,
+                to=[email_log.recipient_email]
+            )
+            msg.attach_alternative(email_log.message, "text/html")
+            msg.send()
 
         # Update EmailLog on success
         email_log.status = EmailLog.StatusChoices.SENT

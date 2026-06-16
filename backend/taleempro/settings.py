@@ -202,6 +202,10 @@ DEFAULT_FROM_EMAIL = os.environ.get(
     'TaleemPro <noreply@taleempro.com>'
 )
 
+# Resend API configuration (Option 2)
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
+RESEND_FROM_EMAIL = os.environ.get('RESEND_FROM_EMAIL', '')
+
 FRONTEND_URL = os.environ.get(
     'FRONTEND_URL',
     'https://taleem-pro.vercel.app'
