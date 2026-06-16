@@ -145,8 +145,28 @@ class DebugEmailLogsView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
+        import socket
+        connection_status = {}
+        try:
+            # Test SMTP port 587
+            s = socket.create_connection(("smtp.gmail.com", 587), timeout=5)
+            s.close()
+            connection_status["smtp_587_ok"] = True
+        except Exception as e:
+            connection_status["smtp_587_ok"] = False
+            connection_status["smtp_587_error"] = str(e)
+
+        try:
+            # Test SMTP port 465 just in case
+            s = socket.create_connection(("smtp.gmail.com", 465), timeout=5)
+            s.close()
+            connection_status["smtp_465_ok"] = True
+        except Exception as e:
+            connection_status["smtp_465_ok"] = False
+            connection_status["smtp_465_error"] = str(e)
+
         logs = EmailLog.objects.all().order_by('-id')[:10]
-        data = [
+        logs_data = [
             {
                 "id": log.id,
                 "recipient": log.recipient_email,
@@ -156,5 +176,9 @@ class DebugEmailLogsView(APIView):
             }
             for log in logs
         ]
-        return Response(data)
+        
+        return Response({
+            "connection_status": connection_status,
+            "logs": logs_data
+        })
 

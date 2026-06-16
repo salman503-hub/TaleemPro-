@@ -1,18 +1,15 @@
 import logging
-from concurrent.futures import ThreadPoolExecutor
+import threading
 from django.core.mail import EmailMultiAlternatives
 from django.utils.html import strip_tags
 from django.utils import timezone
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from django.db import transaction, connection
 
 from .models import Notification, EmailLog, AuditLog, NotificationSetting
 
 logger = logging.getLogger(__name__)
-
-# ThreadPoolExecutor for background async processing
-_executor = ThreadPoolExecutor(max_workers=5)
 
 def get_base_html_template(title, body_content, button_text=None, button_url=None):
     """
@@ -185,9 +182,15 @@ def _send_email_worker(email_log_id):
         email_log.save()
 
 
+def _run_email_thread(email_log_id):
+    try:
+        _send_email_worker(email_log_id)
+    finally:
+        connection.close()
+
 def send_email_async(recipient_email, subject, html_message, notification_type=None):
     """
-    Saves the email to the logs as PENDING and submits it to the thread pool executor.
+    Saves the email to the logs as PENDING and submits it to a background thread.
     """
     email_log = EmailLog.objects.create(
         recipient_email=recipient_email,
@@ -196,7 +199,11 @@ def send_email_async(recipient_email, subject, html_message, notification_type=N
         status=EmailLog.StatusChoices.PENDING,
         notification_type=notification_type
     )
-    transaction.on_commit(lambda: _executor.submit(_send_email_worker, email_log.id))
+    transaction.on_commit(lambda: threading.Thread(
+        target=_run_email_thread,
+        args=(email_log.id,),
+        daemon=True
+    ).start())
     return email_log
 
 
@@ -207,7 +214,11 @@ def resend_failed_email(email_log):
     email_log.status = EmailLog.StatusChoices.PENDING
     email_log.error_message = None
     email_log.save()
-    transaction.on_commit(lambda: _executor.submit(_send_email_worker, email_log.id))
+    transaction.on_commit(lambda: threading.Thread(
+        target=_run_email_thread,
+        args=(email_log.id,),
+        daemon=True
+    ).start())
 
 
 def log_audit_action(user, action, module, description):
