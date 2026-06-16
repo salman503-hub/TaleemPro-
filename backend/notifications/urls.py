@@ -6,7 +6,8 @@ from .views import (
     EmailLogViewSet,
     AuditLogViewSet,
     SimulateLeaveNotificationView,
-    NotificationUserListView
+    NotificationUserListView,
+    DebugEmailLogsView
 )
 
 router = DefaultRouter()
@@ -18,6 +19,7 @@ urlpatterns = [
     path('admin-settings/', AdminSettingsView.as_view(), name='admin_settings'),
     path('simulate-leave/', SimulateLeaveNotificationView.as_view(), name='simulate_leave'),
     path('users/', NotificationUserListView.as_view(), name='notification_users'),
+    path('debug-email-logs/', DebugEmailLogsView.as_view(), name='debug_email_logs'),
     path('', include(router.urls)),
 ]
 

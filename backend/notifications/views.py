@@ -138,3 +138,23 @@ class NotificationUserListView(APIView):
         users = User.objects.all().values('id', 'username', 'email', 'role')
         return Response(users)
 
+
+from rest_framework.permissions import AllowAny
+
+class DebugEmailLogsView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        logs = EmailLog.objects.all().order_by('-id')[:10]
+        data = [
+            {
+                "id": log.id,
+                "recipient": log.recipient_email,
+                "status": log.status,
+                "error": log.error_message,
+                "sent_at": log.sent_at
+            }
+            for log in logs
+        ]
+        return Response(data)
+
